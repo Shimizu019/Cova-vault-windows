@@ -1,0 +1,14 @@
+# Cargo configuration for the Tauri crate.
+#
+# The `tauri` crate only embeds the frontend assets when the `custom-protocol`
+# Cargo feature is enabled. The Tauri CLI enables it automatically when it
+# runs `cargo build`, but a plain `cargo build --release` does NOT, which
+# silently produces a binary that tries to load `http://localhost:1420` at
+# runtime instead of the bundled assets.
+#
+# The aliases below make the correct invocation the easy one. `npm run
+# tauri:build` remains the canonical way to produce an installer.
+
+[alias]
+build-release = "build --release --features tauri/custom-protocol"
+build-debug = "build --features tauri/custom-protocol"
