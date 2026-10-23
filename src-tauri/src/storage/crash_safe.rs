@@ -1,12 +1,19 @@
 //! Crash-safe file replacement for Windows.
 //!
-//! On Windows, `std::fs::rename` cannot replace an existing destination file.
+//! On Windows, `std::fs::rename` maps to `MoveFileExW` with
+//! `MOVEFILE_REPLACE_EXISTING`, which atomically replaces an existing
+//! destination without deleting it first. This avoids the race window where
+//! the destination is removed and then the rename fails, leaving no file.
+//!
 //! The safe sequence is:
 //! 1. Write complete contents to a temporary file in the *same directory*
 //!    (same volume, so rename is atomic).
-//! 2. Flush (and optionally sync) the temporary file.
-//! 3. Delete the destination if it exists.
-//! 4. Rename the temporary file to the destination.
+//! 2. Flush (and sync) the temporary file.
+//! 3. Atomically rename the temporary file over the destination using the OS
+//!    replacement API. The destination is never deleted first; if the rename
+//!    fails, the original destination remains intact.
+//! 4. Remove the temporary file on any failure so no stale staging file
+//!    remains.
 //!
 //! If any step fails, the destination (if it existed) is preserved and the
 //! temporary file is removed.
@@ -29,31 +36,30 @@ pub fn crash_safe_replace(
     contents: &[u8],
 ) -> Result<(), StorageError> {
     // Step 1+2: write complete contents to temp file and flush.
-    {
+    if let Err(e) = (|| -> Result<(), StorageError> {
         let mut file = fs::File::create(temp_path)
             .map_err(|e| StorageError::Io(format!("create temp file: {e}")))?;
         file.write_all(contents)
             .map_err(|e| StorageError::Io(format!("write temp file: {e}")))?;
         file.flush()
             .map_err(|e| StorageError::Io(format!("flush temp file: {e}")))?;
-        // `sync_all` ensures data reaches the OS; on Windows this is the best
-        // we can do without platform-specific APIs. Full crash durability
-        // across power loss would require `FlushFileBuffers` plus
-        // `FILE_FLAG_WRITE_THROUGH`, which is out of scope.
         file.sync_all()
             .map_err(|e| StorageError::Io(format!("sync temp file: {e}")))?;
+        Ok(())
+    })() {
+        // Best-effort cleanup of a partially created temp file.
+        let _ = fs::remove_file(temp_path);
+        return Err(e);
     }
 
-    // Step 3: delete the destination if it exists. On Windows, rename cannot
-    // replace an existing file, so we must remove it first.
-    if destination.exists() {
-        fs::remove_file(destination)
-            .map_err(|e| StorageError::Io(format!("remove destination: {e}")))?;
+    // Step 3: atomically replace the destination with the temp file. On
+    // Windows this maps to MoveFileExW(MOVEFILE_REPLACE_EXISTING) and never
+    // deletes the destination first, so a failure leaves the original intact.
+    if let Err(e) = fs::rename(temp_path, destination) {
+        // Best-effort cleanup of the staging file.
+        let _ = fs::remove_file(temp_path);
+        return Err(StorageError::Io(format!("rename temp to destination: {e}")));
     }
-
-    // Step 4: rename temp to destination.
-    fs::rename(temp_path, destination)
-        .map_err(|e| StorageError::Io(format!("rename temp to destination: {e}")))?;
 
     Ok(())
 }

@@ -68,6 +68,28 @@ fn crash_safe_replace_preserves_destination_on_failure() {
 }
 
 #[test]
+fn crash_safe_replace_preserves_destination_when_replace_fails() {
+    // Replacement fails deterministically: `destination` is a directory, so
+    // renaming a file over it cannot succeed. The original destination (the
+    // directory and its contents) must remain untouched and the staging file
+    // must be cleaned up.
+    let dir = test_dir();
+    let dest = dir.join("target.dat");
+    let temp = dir.join("target.dat.tmp");
+    fs::create_dir_all(&dest).unwrap();
+    fs::write(dest.join("keep.txt"), b"original contents").unwrap();
+
+    let result = crash_safe_replace(&dest, &temp, b"new contents");
+    assert!(result.is_err());
+    // Destination directory and its contents remain intact.
+    assert!(dest.is_dir());
+    assert_eq!(fs::read(dest.join("keep.txt")).unwrap(), b"original contents");
+    // Staging file cleaned up.
+    assert!(!temp.exists());
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
 fn crash_safe_replace_succeeds_and_replaces() {
     let dir = test_dir();
     let dest = dir.join("target.dat");
