@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Minimal capability set for the Cova Vault application shell. The frontend renders a static screen only, so no filesystem, store, shell, or IPC commands are granted.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

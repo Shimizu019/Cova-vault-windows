@@ -1,0 +1,63 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Cova Vault",
+  "version": "0.1.0",
+  "identifier": "com.covavault.windows",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "Cova Vault",
+        "width": 960,
+        "height": 640,
+        "minWidth": 640,
+        "minHeight": 480,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true,
+        "theme": "Dark"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self' ipc: http://ipc.localhost",
+      "devCsp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": [
+      "nsis"
+    ],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "shortDescription": "Cova Vault - local-first password vault for Windows.",
+    "longDescription": "Cova Vault is a local-first desktop password vault for Windows. Your vault is encrypted locally and never leaves your device.",
+    "copyright": "Copyright (c) 2026 Cova Vault",
+    "licenseFile": "../LICENSE",
+    "category": "Utility",
+    "publisher": "Cova Vault",
+    "homepage": "https://github.com/Shimizu019/Cova-vault-windows",
+    "windows": {
+      "nsis": {
+        "installMode": "both",
+        "languages": [
+          "English"
+        ],
+        "displayLanguageSelector": false,
+        "compression": "lzma",
+        "startMenuFolder": "Cova Vault"
+      }
+    }
+  }
+}
