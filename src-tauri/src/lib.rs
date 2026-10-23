@@ -11,7 +11,9 @@
 //! that it can be unit tested in isolation.
 
 use std::path::PathBuf;
+
 use std::sync::Mutex;
+use zeroize::Zeroizing;
 
 use tauri::Manager;
 use tauri::generate_handler;
@@ -44,6 +46,10 @@ fn create_vault(
     password: String,
     service: tauri::State<'_, Mutex<VaultService>>,
 ) -> Result<(), String> {
+    // Best-effort zeroization: wrap the IPC-supplied password so it is wiped
+    // when it goes out of scope. The password necessarily crosses the IPC
+    // boundary from the WebView; it is never logged or persisted as plaintext.
+    let password = Zeroizing::new(password);
     let mut service = service.lock().map_err(|e| e.to_string())?;
     service.create(&password).map_err(|e| e.to_string())
 }
@@ -54,6 +60,7 @@ fn unlock_vault(
     password: String,
     service: tauri::State<'_, Mutex<VaultService>>,
 ) -> Result<(), String> {
+    let password = Zeroizing::new(password);
     let mut service = service.lock().map_err(|e| e.to_string())?;
     service.unlock(&password).map_err(|e| e.to_string())
 }

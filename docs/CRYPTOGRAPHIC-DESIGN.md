@@ -16,8 +16,12 @@ their rationale and a benchmark reference.
 
 - Attacker controls `vault.meta.json` and `vault.data`. Both files may be
   read, modified, or replaced by an attacker with file-system access.
-- Attacker does not know the user's password. The password never leaves
-  the Rust backend; the WebView/frontend never sees it.
+- Attacker does not know the user's password. The password is entered in
+  the application UI (WebView) and necessarily crosses the Tauri IPC
+  boundary into the Rust backend as a command argument; it is never
+  logged, never persisted as plaintext, and is zeroized on a best-effort
+  basis in Rust once key derivation completes. The WebView does not
+  retain the password after submitting it.
 - Goal of the attacker: decrypt vault contents, forge valid vaults, or
   downgrade security parameters without detection.
 
@@ -169,8 +173,10 @@ Error messages contain no secret material (no passwords, no keys).
 
 - All keys are held in `zeroize::Zeroizing` wrappers and zeroized on drop.
 - No key material is returned to the caller or exposed to the WebView.
-- Decrypted plaintext is returned as an owned `Vec<u8>`; the caller is
-  responsible for zeroizing it after use.
+- Decrypted plaintext is held in `zeroize::Zeroizing<Vec<u8>>` inside
+  the active session and is zeroized on lock/drop. Any plaintext returned
+  to callers is an owned buffer; callers are responsible for zeroizing it
+  after use.
 - The master key is zeroized immediately after subkey derivation.
 
 ---

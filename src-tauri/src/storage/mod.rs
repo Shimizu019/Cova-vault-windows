@@ -24,13 +24,15 @@
 //!   zeroized on lock/drop via [`zeroize::Zeroizing`].
 //! - No key material is ever returned through the public API.
 //! - Decrypted plaintext is held in memory only while the vault is unlocked.
-//! - Passwords are never logged.
+//! - Passwords are never logged or persisted as plaintext. Passwords
+//!   supplied via the WebView necessarily cross the Tauri IPC boundary;
+//!   they are zeroized on a best-effort basis in Rust.
 
 use std::fmt;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use zeroize::Zeroizing;
+use zeroize::{Zeroize, Zeroizing};
 
 use crate::crypto::{
     CryptoError, cipher,
@@ -135,16 +137,16 @@ struct ActiveSession {
     /// AES-256-GCM encryption key, zeroized on drop.
     encryption_key: Zeroizing<[u8; KEY_LEN]>,
     /// Currently decrypted vault payload.
-    decrypted_payload: Vec<u8>,
+    decrypted_payload: Zeroizing<Vec<u8>>,
     /// The validated vault metadata.
     vault_meta: VaultMeta,
 }
 
 impl Drop for ActiveSession {
     fn drop(&mut self) {
-        // Zeroize decrypted plaintext before releasing memory.
-        self.decrypted_payload.fill(0);
-        // `Zeroizing` wrappers zeroize their contents on drop.
+        // Zeroize decrypted plaintext before releasing memory. The
+        // `Zeroizing` wrapper also zeroes its buffer on drop.
+        self.decrypted_payload.zeroize();
     }
 }
 
@@ -295,7 +297,7 @@ impl VaultService {
 
         let envelope = self.read_envelope_file()?;
         let decrypted_payload = match cipher::open(&keys.encryption, &envelope, &meta_bytes) {
-            Ok(p) => p,
+            Ok(p) => Zeroizing::new(p),
             Err(e) => {
                 self.corrupted = true;
                 return Err(StorageError::Crypto(e));
@@ -338,7 +340,7 @@ impl VaultService {
         self.write_data_atomic(&envelope_bytes)?;
 
         if let Some(session) = self.session.as_mut() {
-            session.decrypted_payload = payload.to_vec();
+            session.decrypted_payload = Zeroizing::new(payload.to_vec());
         }
 
         Ok(())
