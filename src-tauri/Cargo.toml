@@ -1,0 +1,45 @@
+[package]
+name = "cova-vault"
+version = "0.1.0"
+description = "Cova Vault - local-first password vault for Windows"
+authors = ["Cova Vault"]
+license = "MIT"
+repository = "https://github.com/Shimizu019/Cova-vault-windows"
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "cova_vault_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.4", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.5", features = [] }
+tauri-plugin-log = "2"
+log = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# --- Cryptographic core (Milestone 2) -----------------------------------
+# MIT OR Apache-2.0 (subtle is BSD-3-Clause). See docs/CRYPTOGRAPHIC-DESIGN.md.
+argon2 = { version = "0.6", default-features = false, features = ["alloc"] }
+aes-gcm = { version = "0.11", default-features = false, features = ["aes", "alloc", "zeroize"] }
+hkdf = { version = "0.13", default-features = false }
+hmac = { version = "0.13", default-features = false }
+sha2 = { version = "0.11", default-features = false }
+getrandom = "0.4"
+zeroize = { version = "1.9", default-features = false, features = ["alloc"] }
+subtle = { version = "2.6", default-features = false }
+
+[dev-dependencies]
+hex-literal = "1"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true
+

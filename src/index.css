@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Cova Vault design tokens.
+ *
+ * Dark is the default theme. The light palette lives behind the `html.light`
+ * class so the token contract is identical in both themes - Tailwind reads the
+ * RGB triplets below and applies its own alpha modifiers.
+ */
+@layer base {
+  :root {
+    color-scheme: dark;
+
+    /* Surfaces */
+    --cova-bg: #07111f;
+    --cova-surface: #0d1b2a;
+    --cova-elevated: #12263a;
+    --cova-border: #20364d;
+
+    /* Brand */
+    --cova-primary: #2f80ff;
+    --cova-primary-hover: #256fe0;
+    --cova-accent: #3fa9ff;
+    --cova-violet: #8b5cf6;
+
+    /* Type */
+    --cova-text: #f5f9ff;
+    --cova-muted: #a5b8cb;
+    --cova-faint: #8296ab;
+
+    /* RGB triplets - lets Tailwind apply alpha modifiers to any token */
+    --cova-bg-rgb: 7 17 31;
+    --cova-surface-rgb: 13 27 42;
+    --cova-elevated-rgb: 18 38 58;
+    --cova-border-rgb: 32 54 77;
+    --cova-primary-rgb: 47 128 255;
+    --cova-primary-hover-rgb: 37 111 224;
+    --cova-accent-rgb: 63 169 255;
+    --cova-violet-rgb: 139 92 246;
+    --cova-text-rgb: 245 249 255;
+    --cova-muted-rgb: 165 184 203;
+    --cova-faint-rgb: 130 150 171;
+
+    /* The blue -> violet sweep taken from the CovaLogo wordmark. */
+    --cova-gradient: linear-gradient(100deg, #3fa9ff 0%, #8b5cf6 90%);
+
+    --cova-shadow-card: 0 1px 2px rgba(2, 8, 20, 0.35);
+    --cova-shadow-glow: 0 14px 44px -16px rgba(47, 128, 255, 0.45);
+  }
+
+  /*
+   * Light palette. Structurally identical to `:root` so every consumer keeps
+   * working; dark remains the default because nothing toggles this class yet.
+   */
+  html.light {
+    color-scheme: light;
+
+    --cova-bg: #f5f8fc;
+    --cova-surface: #ffffff;
+    --cova-elevated: #eaf0f7;
+    --cova-border: #d7e0ea;
+
+    --cova-primary: #1f6fe6;
+    --cova-primary-hover: #185ec7;
+    --cova-accent: #175fd0;
+    --cova-violet: #7c3aed;
+
+    --cova-text: #0f1c2e;
+    --cova-muted: #516273;
+    --cova-faint: #55677c;
+
+    --cova-bg-rgb: 245 248 252;
+    --cova-surface-rgb: 255 255 255;
+    --cova-elevated-rgb: 234 240 247;
+    --cova-border-rgb: 215 224 234;
+    --cova-primary-rgb: 31 111 230;
+    --cova-primary-hover-rgb: 24 94 199;
+    --cova-accent-rgb: 23 95 208;
+    --cova-violet-rgb: 124 58 237;
+    --cova-text-rgb: 15 28 46;
+    --cova-muted-rgb: 81 98 115;
+    --cova-faint-rgb: 85 103 124;
+
+    --cova-gradient: linear-gradient(100deg, #1f6fe6 0%, #7c3aed 90%);
+
+    --cova-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06);
+    --cova-shadow-glow: 0 14px 40px -18px rgba(31, 111, 230, 0.4);
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--cova-bg);
+    color: var(--cova-text);
+    font-family:
+      'Segoe UI Variable Text',
+      'Segoe UI Variable',
+      'Segoe UI',
+      system-ui,
+      -apple-system,
+      BlinkMacSystemFont,
+      'Helvetica Neue',
+      Arial,
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: rgb(var(--cova-primary-rgb) / 0.35);
+  }
+}
