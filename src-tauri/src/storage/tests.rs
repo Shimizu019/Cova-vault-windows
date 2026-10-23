@@ -83,7 +83,10 @@ fn crash_safe_replace_preserves_destination_when_replace_fails() {
     assert!(result.is_err());
     // Destination directory and its contents remain intact.
     assert!(dest.is_dir());
-    assert_eq!(fs::read(dest.join("keep.txt")).unwrap(), b"original contents");
+    assert_eq!(
+        fs::read(dest.join("keep.txt")).unwrap(),
+        b"original contents"
+    );
     // Staging file cleaned up.
     assert!(!temp.exists());
     let _ = fs::remove_dir_all(&dir);
@@ -246,6 +249,30 @@ fn save_while_locked_is_rejected() {
     service.create("password").unwrap();
     let result = service.save(b"some data");
     assert!(matches!(result, Err(StorageError::VaultLocked)));
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn save_failure_leaves_persisted_and_in_memory_unchanged() {
+    let dir = test_dir();
+    let mut service = test_service(&dir);
+    service.create("password").unwrap();
+    service.unlock("password").unwrap();
+    service.save(b"first payload").unwrap();
+    assert_eq!(service.decrypted_payload().unwrap(), b"first payload");
+
+    let temp = service.vault_dir.join("vault.data.tmp");
+    fs::create_dir_all(&temp).unwrap();
+
+    let result = service.save(b"second payload");
+    assert!(result.is_err());
+
+    assert_eq!(service.decrypted_payload().unwrap(), b"first payload");
+
+    let mut reloaded = test_service(&dir);
+    reloaded.unlock("password").unwrap();
+    assert_eq!(reloaded.decrypted_payload().unwrap(), b"first payload");
+
     let _ = fs::remove_dir_all(&dir);
 }
 //

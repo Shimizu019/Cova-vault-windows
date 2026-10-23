@@ -323,14 +323,23 @@ impl VaultService {
     ///
     /// Fails with [`StorageError::VaultLocked`] if the vault is not unlocked.
     pub fn save(&mut self, payload: &[u8]) -> Result<(), StorageError> {
-        let session = self.session.as_mut().ok_or(StorageError::VaultLocked)?;
+        // Prepare the encrypted envelope from the current session WITHOUT
+        // mutating the in-memory payload. Persist first; only update the
+        // session's decrypted payload after a successful write so a failed
+        // write leaves both the persisted vault and the in-memory state
+        // unchanged.
+        let envelope_bytes = {
+            let session = self.session.as_ref().ok_or(StorageError::VaultLocked)?;
+            let meta_bytes = serde_json::to_vec_pretty(&session.vault_meta)?;
+            let envelope = cipher::seal(&session.encryption_key, &meta_bytes, payload)?;
+            envelope.to_bytes()
+        };
 
-        let meta_bytes = serde_json::to_vec_pretty(&session.vault_meta)?;
-        let envelope = cipher::seal(&session.encryption_key, &meta_bytes, payload)?;
+        self.write_data_atomic(&envelope_bytes)?;
 
-        session.decrypted_payload = payload.to_vec();
-
-        self.write_data_atomic(&envelope.to_bytes())?;
+        if let Some(session) = self.session.as_mut() {
+            session.decrypted_payload = payload.to_vec();
+        }
 
         Ok(())
     }
